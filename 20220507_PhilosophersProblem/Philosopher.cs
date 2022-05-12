@@ -11,36 +11,34 @@ namespace _20220507_PhilosophersProblem
 
     class Philosopher
     {
-        private Random _random;
-        private readonly int _maxThinkDuration = 1000;
-        private readonly int _minThinkDuration = 50;
+        public const int ITERATIONS_COUNT = 5;
 
+        private Random _random;
         private object _sync = new object();
+        ILoger _loger;
 
         private Fork _left;
         private Fork _right;
         private ActionPhilosopher _action = ActionPhilosopher.Thinking;
-        private readonly List<Philosopher> _allPhilosophers;
 
-        static SemaphoreSlim allowedToEat = new SemaphoreSlim(2);
-
-        public Philosopher(string name, Fork left, Fork right/*, List<Philosopher> allPhilosophers*/)
+        public Philosopher(string name, Fork left, Fork right, ILoger logFile)
         {
             Name = name;
             _left = left;
             _right = right;
-            //_allPhilosophers = allPhilosophers;
+            _random = new Random();
+            _loger = logFile;
         }
 
         public string Name { get; }
 
         private void Eat()
         {
-            var eatingDuration = _random.Next(_maxThinkDuration) + _minThinkDuration;
-
-            Console.WriteLine("Philosopher {0} is eating.", Name);
+            var eatingDuration = _random.Next(0, 500);
+            
+            _loger.Write(string.Format("Philosopher {0} is eating.", Name));
             Thread.Sleep(eatingDuration);
-            Console.WriteLine("Philosopher {0} is thinking after eating.", Name);
+            _loger.Write(string.Format("Philosopher {0} is thinking after eating.", Name));
         }
 
         private bool IsForkAvailable()
@@ -51,13 +49,13 @@ namespace _20220507_PhilosophersProblem
             {
                 if (_left.IsUse)
                 {
-                    Console.WriteLine("Philosopher {0} cannot eat. Left fork is in use", Name);
+                    _loger.Write(string.Format("Philosopher {0} cannot eat. Left fork is in use", Name));
                     isAvailable = false;
                 }
 
                 if (_right.IsUse)
                 {
-                    Console.WriteLine("Philosopher {0} cannot eat. Left fork is in use", Name);
+                    _loger.Write(string.Format("Philosopher {0} cannot eat. Right fork is in use", Name));
                     isAvailable = false;
                 }
             }
@@ -75,8 +73,8 @@ namespace _20220507_PhilosophersProblem
                 _right.PhilosopherUseFork = this;
                 _action = ActionPhilosopher.Eating;
 
-                Console.WriteLine("Philosopher {0} acquired forks: {1}, {2}.", 
-                        Name, _left.NameFork, _right.NameFork);
+                _loger.Write(string.Format("Philosopher {0} acquired forks: {1}, {2}. Philosopher {3}",
+                        Name, _left.NameFork, _right.NameFork, _action.ToString()));
             }
         }
 
@@ -90,9 +88,36 @@ namespace _20220507_PhilosophersProblem
                 _right.PhilosopherUseFork = null;
                 _action = ActionPhilosopher.Thinking;
 
-                Console.WriteLine("Philosopher {0} released forks: {1}, {2}.",
-                        Name, _left.NameFork, _right.NameFork);
+                _loger.Write(string.Format("Philosopher {0} release forks: {1}, {2}. Philosopher {3}",
+                        Name, _left.NameFork, _right.NameFork, _action.ToString()));
             }
+        }
+
+        public void Run()
+        {
+            int count = 0;
+
+            while (count < ITERATIONS_COUNT)
+            {
+                bool isOkToEat;
+                lock(_sync)
+                {
+                    isOkToEat = IsForkAvailable();
+                    if (isOkToEat)
+                    {
+                        AquireForks();
+                    }
+                }
+
+
+                if (isOkToEat)
+                { 
+                    Eat();
+                    ReleaseForks();
+                }
+                count++;
+            }
+
         }
     }
 }

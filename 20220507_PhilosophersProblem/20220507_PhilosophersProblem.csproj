@@ -45,6 +45,8 @@
   <ItemGroup>
     <Compile Include="ActionPhilosopher.cs" />
     <Compile Include="Fork.cs" />
+    <Compile Include="ILoger.cs" />
+    <Compile Include="Loger.cs" />
     <Compile Include="Philosopher.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
