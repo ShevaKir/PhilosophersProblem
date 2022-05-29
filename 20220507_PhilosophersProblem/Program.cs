@@ -23,14 +23,14 @@ namespace _20220507_PhilosophersProblem
             using (Loger log = new Loger())
             {
                 Philosopher platon = new Philosopher("1) Platon", forkOrange, forkBlack, log);
-                Philosopher pifagor = new Philosopher("2) Pifagor", forkBlack, forkGreen, log);
-                Philosopher sokrat = new Philosopher("3) Sokrat", forkGreen, forkBlue, log);
+                Philosopher sokrat = new Philosopher("2) Sokrat", forkBlack, forkGreen, log);
+                Philosopher pifagor = new Philosopher("3) Pifagor", forkGreen, forkBlue, log);
                 Philosopher aristotel = new Philosopher("4) Aristotel", forkBlue, forkRed, log);
                 Philosopher kant = new Philosopher("5) Kant", forkRed, forkOrange, log);
 
                 all.Add(platon);
-                all.Add(pifagor);
                 all.Add(sokrat);
+                all.Add(pifagor);
                 all.Add(aristotel);
                 all.Add(kant);
 
@@ -41,6 +41,7 @@ namespace _20220507_PhilosophersProblem
                 foreach (Philosopher philosopher in all)
                 {
                     var philosopherThread = new Thread(new ThreadStart(philosopher.Run));
+                    philosopherThread.IsBackground = true;
                     philosopherThreads.Add(philosopherThread);
                 }
 
@@ -49,12 +50,15 @@ namespace _20220507_PhilosophersProblem
                     thread.Start();
                 }
 
-                foreach (Thread thread in philosopherThreads)
-                {
-                    thread.Join();
-                }
+                //foreach (Thread thread in philosopherThreads)
+                //{
+                //    thread.Join();
+                //}
 
-                log.Write("Dinner is over!");
+                
+                Console.ReadKey();
+                Console.Write("Dinner is over!");
+                //Console.ReadKey();
             }
             Console.Write("end");
         }

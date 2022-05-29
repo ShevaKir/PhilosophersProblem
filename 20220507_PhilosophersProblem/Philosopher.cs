@@ -11,15 +11,14 @@ namespace _20220507_PhilosophersProblem
 
     class Philosopher
     {
-        public const int ITERATIONS_COUNT = 5;
+        public const int ITERATIONS_COUNT = 50;
 
         private Random _random;
-        private object _sync = new object();
+
         ILoger _loger;
 
         private Fork _left;
         private Fork _right;
-        private ActionPhilosopher _action = ActionPhilosopher.Thinking;
 
         public Philosopher(string name, Fork left, Fork right, ILoger logFile)
         {
@@ -34,90 +33,94 @@ namespace _20220507_PhilosophersProblem
 
         private void Eat()
         {
-            var eatingDuration = _random.Next(0, 500);
-            
+            var eatingDuration = _random.Next(0, 300);
+
+            _loger.Write(string.Format("Philosopher {0} have two forks {1} --- {2}.", Name, _left.NameFork, _right.NameFork));
             _loger.Write(string.Format("Philosopher {0} is eating.", Name));
             Thread.Sleep(eatingDuration);
-            _loger.Write(string.Format("Philosopher {0} is thinking after eating.", Name));
+
+        }
+
+        private void Think()
+        {
+            var thinkingDuration = _random.Next(0, 100);
+
+            _loger.Write(string.Format("Philosopher {0} is thinking.", Name));
+            Thread.Sleep(thinkingDuration);
         }
 
         private bool IsForkAvailable()
         {
             bool isAvailable = true;
 
-            lock (_sync) 
-            {
-                if (_left.IsUse)
-                {
-                    _loger.Write(string.Format("Philosopher {0} cannot eat. Left fork is in use", Name));
-                    isAvailable = false;
-                }
-
-                if (_right.IsUse)
-                {
-                    _loger.Write(string.Format("Philosopher {0} cannot eat. Right fork is in use", Name));
-                    isAvailable = false;
-                }
-            }
-
             return isAvailable;
         }
 
         private void AquireForks()
         {
-            lock (_sync)
-            {
-                _left.IsUse = true;
-                _left.PhilosopherUseFork = this;
-                _right.IsUse = true;
-                _right.PhilosopherUseFork = this;
-                _action = ActionPhilosopher.Eating;
+            _left.IsUse = true;
+            _right.IsUse = true;
 
-                _loger.Write(string.Format("Philosopher {0} acquired forks: {1}, {2}. Philosopher {3}",
-                        Name, _left.NameFork, _right.NameFork, _action.ToString()));
-            }
+            _loger.Write(string.Format("Philosopher {0} acquired forks: {1}, {2}.",
+                    Name, _left.NameFork, _right.NameFork));
         }
 
         private void ReleaseForks()
         {
-            lock (_sync)
-            {
-                _left.IsUse = false;
-                _left.PhilosopherUseFork = null;
-                _right.IsUse = false;
-                _right.PhilosopherUseFork = null;
-                _action = ActionPhilosopher.Thinking;
+            _left.IsUse = false;
+            _left.PhilosopherUseFork = null;
+            _right.IsUse = false;
+            _right.PhilosopherUseFork = null;
 
-                _loger.Write(string.Format("Philosopher {0} release forks: {1}, {2}. Philosopher {3}",
-                        Name, _left.NameFork, _right.NameFork, _action.ToString()));
-            }
+            _loger.Write(string.Format("Philosopher {0} release forks: {1}, {2}.",
+                    Name, _left.NameFork, _right.NameFork));
         }
 
         public void Run()
         {
             int count = 0;
 
-            while (count < ITERATIONS_COUNT)
+            for( ; ; )
             {
-                bool isOkToEat;
-                lock(_sync)
+                if (!_left.IsUse)
                 {
-                    isOkToEat = IsForkAvailable();
-                    if (isOkToEat)
+                    _left.IsUse = true;
+                    _left.PhilosopherUseFork = this;
+                    _loger.Write(string.Format("Philosopher {0} acquired fork: {1}", Name, _left.NameFork));
+                }
+                else
+                {
+                    if (!_right.IsUse)
                     {
-                        AquireForks();
+                        _right.IsUse = true;
+                        _right.PhilosopherUseFork = this;
+                        _loger.Write(string.Format("Philosopher {0} acquired fork: {1}", Name, _right.NameFork));
+                    }
+                    else
+                    {
+                        Think();
+                        count++;
+                        if(count == 10)
+                        {
+                            _left.IsUse = false;
+                            _left.PhilosopherUseFork = null;
+                            _right.IsUse = false;
+                            _right.PhilosopherUseFork = null;
+                            count = 0;
+                        }
                     }
                 }
 
-
-                if (isOkToEat)
-                { 
+                if (ReferenceEquals(_left.PhilosopherUseFork, this) && ReferenceEquals(_right.PhilosopherUseFork, this))
+                {
                     Eat();
                     ReleaseForks();
+                    Think();
+                    count = 0;
                 }
-                count++;
             }
 
         }
     }
 }
+
